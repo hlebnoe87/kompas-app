@@ -382,7 +382,14 @@ body{font-family:'Golos Text',sans-serif;background:var(--bg);color:var(--tx);ma
 .edit-save:active{background:var(--g2)}
 
 /* ════════ BONUS SYSTEM ════════ */
-.bonus-card{background:linear-gradient(135deg,var(--g) 0%,var(--g2) 100%);border-radius:var(--r);margin:0 16px;padding:18px 18px 16px;color:#fff;position:relative;overflow:hidden}
+/* ── БОНУСНАЯ СИСТЕМА — СКРЫТА (раскомментировать чтобы включить) ── */
+#sub-bonus,
+#bonusSpendRow,
+#bonusCartRow,
+#bonusEarnRow,
+#statBonusItem,
+#bonusProfileRow { display: none !important; }
+/* ─────────────────────────────────────────────────────────────────── */
 .bonus-card::after{content:'✦';position:absolute;right:-10px;top:-10px;font-size:80px;opacity:.07}
 .bonus-bal-lbl{font-size:12px;font-weight:500;color:rgba(255,255,255,.75);margin-bottom:4px}
 .bonus-bal{font-size:38px;font-weight:900;letter-spacing:-1px;line-height:1}
@@ -952,7 +959,7 @@ body{font-family:'Golos Text',sans-serif;background:var(--bg);color:var(--tx);ma
       </div>
       <div class="stats-row">
         <div class="stat-item" onclick="showSub('sub-orders')"><div class="stat-val" id="statOrders">0</div><div class="stat-lbl">Заказов</div></div>
-        <div class="stat-item" onclick="showSub('sub-bonus')"><div class="stat-val" id="statBonuses">0</div><div class="stat-lbl">Бонусов</div></div>
+        <div class="stat-item" id="statBonusItem" onclick="showSub('sub-bonus')"><div class="stat-val" id="statBonuses">0</div><div class="stat-lbl">Бонусов</div></div>
         <div class="stat-item" onclick="showSub('sub-addresses')"><div class="stat-val" id="statAddresses">0</div><div class="stat-lbl">Адресов</div></div>
       </div>
       <div class="sec-lbl">Личные данные</div>
@@ -1003,7 +1010,7 @@ body{font-family:'Golos Text',sans-serif;background:var(--bg);color:var(--tx);ma
           </div>
           <div class="p-row-right"><span style="color:var(--tx2);font-size:18px">›</span></div>
         </div>
-        <div class="p-row" onclick="showSub('sub-bonus')">
+        <div class="p-row" id="bonusProfileRow" onclick="showSub('sub-bonus')">
           <div class="p-ico ic-a">🎁</div>
           <div class="p-row-body"><div class="p-row-title">Бонусы и акции</div><div class="p-row-sub" id="bonusRowSub">0 бонусов = 0 ₽ · 5 за 100 ₽</div></div>
           <div class="p-row-right"><span style="color:var(--tx2);font-size:18px">›</span></div>
@@ -1745,7 +1752,7 @@ async function sendOrder(payload) {
           'Адрес: ' + (payload.address || '') + '\n' +
           'Оплата: ' + (payload.payment || 'СБП') + '\n' +
           'Бонусов списано: ' + (payload.bonusUsed || 0) + '\n' +
-          'Стратегия замены: ' + (payload.replaceStrategy || 'replace'),
+          'Стратегия замены: ' + (REPLACE_STRATEGY_LABELS[payload.replaceStrategy] || payload.replaceStrategy),
         organization: {
           meta: {
             href: MS.msUrl + '/entity/organization/' + MS.orgId,
@@ -2029,6 +2036,12 @@ function init() {
     }).catch(() => {});
   }, MS.interval);
 }
+
+const REPLACE_STRATEGY_LABELS = {
+  'replace': 'Заменить похожим товаром',
+  'skip':    'Убрать позицию из заказа',
+  'cancel':  'Отменить весь заказ'
+};
 
 /* ── СТРАТЕГИЯ ЗАМЕНЫ ── */
 let replaceStrategy = 'replace'; // replace | skip | cancel
