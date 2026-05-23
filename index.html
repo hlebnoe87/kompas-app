@@ -4004,38 +4004,28 @@ async function submitReg() {
     Дата:         new Date().toISOString()
   };
 
-  // Отправка в МойСклад — создаём контрагента с реальным именем
-  try {
-    const result = await sendClientTo1C(payload);
-    if (result && result.promoCode) {
-      payload.promoCode = result.promoCode;
-    }
-    if (result && result.clientCode) {
-      payload.clientCode = result.clientCode;
-    }
-    // Сохраняем UUID контрагента из МоегоСклада — используется при каждом заказе
-    if (result && result.clientId) {
-      payload.clientId = result.clientId;
-    }
-  } catch(e) {
-    console.warn('Ошибка регистрации в МоёмСкладе:', e);
-  }
-
-  // Демо-режим: если 1С не ответил — генерируем промокод локально
-  if (!payload.promoCode) payload.promoCode = 'ДОСТАВКА0';
-
-  // Сохраняем пользователя
+  // Сразу сохраняем пользователя локально — регистрация не зависит от МоегоСклада
   currentUser = payload;
   try { localStorage.setItem('kompas_user', JSON.stringify(payload)); } catch(e) {}
 
   btn.disabled = false;
   btn.textContent = 'Зарегистрироваться →';
 
-  // Показываем уведомление с промокодом
-  showRegSuccess(fio, payload.promoCode);
+  // Показываем экран успеха сразу
+  showRegSuccess(fio);
+
+  // Отправка в МойСклад в фоне — не блокирует UI
+  sendClientTo1C(payload).then(result => {
+    if (result && result.clientId) {
+      currentUser.clientId = result.clientId;
+      try { localStorage.setItem('kompas_user', JSON.stringify(currentUser)); } catch(e) {}
+    }
+  }).catch(e => {
+    console.warn('Фоновая отправка в МойСклад:', e);
+  });
 }
 
-function showRegSuccess(fio, promo) {
+function showRegSuccess(fio) {
   // Обновляем профиль
   const nameParts = fio.split(' ');
   const initials = nameParts.slice(0, 2).map(p => p[0]).join('');
@@ -4045,7 +4035,6 @@ function showRegSuccess(fio, promo) {
   // Показываем модальное окно успеха
   const modal = document.getElementById('regSuccessModal');
   document.getElementById('regSuccessName').textContent = fio.split(' ')[1] || fio.split(' ')[0];
-  document.getElementById('regSuccessPromo').textContent = promo || 'ДОСТАВКА0';
   modal.style.display = 'flex';
 }
 
