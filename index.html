@@ -1604,7 +1604,7 @@ const MS = {
   orgId:          '6b69ac23-02a8-11ed-0a80-073c00232c12',
   priceTypeId:    '6b6b9d45-02a8-11ed-0a80-073c00232c1a',
   defaultAgentId: '17809d07-561e-11f1-0a80-10740014a1c5',
-  interval:       60000
+  interval:       300000 // 5 минут — не превышаем лимиты МоегоСклада
 };
 
 function msHeaders() {
@@ -1907,7 +1907,7 @@ async function updateClient(payload) {
    GET /entity/customerorder/{id} */
 async function fetchOrderStatus(orderId) {
   try {
-    const r = await fetch(MS.url + '/entity/customerorder/' + orderId, {
+    const r = await fetch(MS.url + '/entity/customerorder/' + orderId + '?expand=state', {
       headers: msHeaders(),
       signal: AbortSignal.timeout(8000)
     });
