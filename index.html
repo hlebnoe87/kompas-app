@@ -1884,9 +1884,13 @@ async function updateClient(payload) {
   try {
     if (!payload.clientId) return null;
     const body = {};
-    if (payload.fio)   body.name        = payload.fio;
-    if (payload.phone) body.phone       = payload.phone;
-    if (payload.email) body.email       = payload.email;
+    // Поддерживаем оба варианта — fio и ФИО
+    const name = payload.fio || payload.ФИО || '';
+    if (name)          body.name  = name;
+    if (payload.phone || payload.Телефон) body.phone = payload.phone || payload.Телефон;
+    if (payload.email || payload.Email)   body.email = payload.email || payload.Email;
+
+    if (!Object.keys(body).length) return null;
 
     const r = await fetch(MS.url + '/entity/counterparty/' + payload.clientId, {
       method: 'PUT',
