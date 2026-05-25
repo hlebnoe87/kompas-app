@@ -2707,7 +2707,7 @@ function saveActiveOrders() {
    При смене статуса — обновляем UI и показываем уведомление.
    Заказ со статусом 4 (Доставлен) переходит в историю автоматически. */
 
-const STATUS_POLL_INTERVAL = 30000; // 30 секунд
+const STATUS_POLL_INTERVAL = 120000; // 2 минуты — не превышаем лимиты МоегоСклада
 const STATUS_LABELS = {
   1: 'Принят складом',
   2: 'Собирается',
@@ -2722,27 +2722,30 @@ async function pollOrderStatuses() {
   let anyChanged = false;
   const completed = []; // индексы доставленных или отменённых
 
-  // Проходим по всем активным заказам параллельно
-  const promises = activeOrders.map(async (order, idx) => {
-    // Опрашиваем по UUID документа (docId), сохранённому при создании заказа
-    if (!order.docId) return;
+  // Опрашиваем заказы последовательно с паузой — не параллельно
+  // чтобы не превышать лимиты МоегоСклада
+  for (let idx = 0; idx < activeOrders.length; idx++) {
+    const order = activeOrders[idx];
+    if (!order.docId) continue;
     const data = await fetchOrderStatus(order.docId);
-    if (!data) return; // пропускаем если МойСклад недоступен
+    if (!data) continue;
 
     const newStage = parseInt(data.stage);
-    if (newStage === undefined || newStage === order.stage) return; // статус не изменился
+    if (newStage === undefined || newStage === order.stage) {
+      // пауза между запросами
+      await new Promise(res => setTimeout(res, 500));
+      continue;
+    }
 
     const oldStage = order.stage;
     order.stage = newStage;
     if (data.courierPhone) order.courierPhone = data.courierPhone;
     anyChanged = true;
 
-    // Уведомление о смене статуса
     if (newStage > oldStage && STATUS_LABELS[newStage]) {
       showToast('Заказ ' + order.orderNum + ' — ' + STATUS_LABELS[newStage]);
     }
 
-    // Заказ доставлен или отменён или возврат — в историю
     if (newStage === 4) {
       addToOrderHistory({ ...order, status: 'completed' });
       completed.push(idx);
@@ -2753,9 +2756,10 @@ async function pollOrderStatuses() {
       addToOrderHistory({ ...order, status: 'returned' });
       completed.push(idx);
     }
-  });
 
-  await Promise.all(promises);
+    // пауза между запросами
+    await new Promise(res => setTimeout(res, 500));
+  }
 
   // Удаляем завершённые (в обратном порядке, чтобы индексы не сдвинулись)
   if (completed.length) {
