@@ -619,11 +619,11 @@ html,body{overscroll-behavior-y:none}
 <body>
 
 <script>
-/* Бесшовный старт: если пользователь уже авторизован, прячем экран входа
-   ещё ДО отрисовки — иначе он мелькал/висел, пока выполняется boot-скрипт.
-   Если авторизации не было — экран входа показывается сразу, как и задумано. */
+/* Бесшовный старт: экран входа скрыт всегда — приложение открыто для гостей.
+   Авторизация по email остаётся доступной по кнопке «Войти» в профиле
+   и запрашивается только при оформлении заказа (нужен телефон для МойСклад). */
 try {
-  if (localStorage.getItem('kompas_user')) document.documentElement.classList.add('auth-skip');
+  document.documentElement.classList.add('auth-skip');
 } catch(e) {}
 </script>
 <style>.auth-skip #regScreen{display:none!important}</style>
@@ -2661,9 +2661,8 @@ function init() {
       if (!new URLSearchParams(location.search).get('payment')) loadServerOrders();
     }
   } catch(e) {}
-  // Пользователя нет (или данные повреждены) — экран входа должен быть виден:
-  // снимаем раннее сокрытие, которое выставил inline-скрипт в начале <body>
-  if (!currentUser) document.documentElement.classList.remove('auth-skip');
+  // Гостевой режим: без авторизации экран входа не показываем —
+  // каталог доступен сразу, вход предложим только при оформлении заказа.
   if (promoDismissed) { const pb = document.getElementById('promoBanner'); if (pb) pb.style.display = 'none'; }
   refreshProfileUI();
   updateBonusUI();
@@ -6737,8 +6736,10 @@ function doLogout() {
   document.getElementById('logoutModal').style.display = 'none';
   // Сбрасываем UI профиля
   refreshProfileUI();
-  // Показываем экран входа — регистрация обязательна
-  openAuth();
+  // Гостевой режим: после выхода возвращаем в каталог, экран входа не показываем
+  document.documentElement.classList.add('auth-skip');
+  document.getElementById('regScreen').classList.add('hidden');
+  switchPage('catalog');
   // Сбрасываем поля регистрации
   ['regLastName','regFirstName','regMiddleName','regPhone','regEmail'].forEach(id => {
     const el = document.getElementById(id);
